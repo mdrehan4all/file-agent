@@ -81,6 +81,43 @@ app.delete('/delete', async (req, res) => {
     }
 });
 
+/**
+ * Helper: Recursively scans folders to build a nested JSON tree
+ */
+async function getFilesRecursively(dir) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    
+    const files = await Promise.all(entries.map(async (dirent) => {
+        const fullPath = path.resolve(dir, dirent.name);
+        const relativePath = path.relative(ROOT_DIR, fullPath);
+        
+        if (dirent.isDirectory()) {
+            return {
+                name: dirent.name,
+                path: relativePath,
+                type: 'folder',
+                children: await getFilesRecursively(fullPath) // Recursive call
+            };
+        }
+        return { 
+            name: dirent.name, 
+            path: relativePath, 
+            type: 'file' 
+        };
+    }));
+    return files;
+}
+
+// 5. RECURSIVE LIST: Get the entire tree starting from ROOT_DIR
+app.get('/list-all', async (req, res) => {
+    try {
+        const tree = await getFilesRecursively(ROOT_DIR);
+        res.json(tree);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to scan directory recursively' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`File Manager API running at http://localhost:${PORT}`);
 });
