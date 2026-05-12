@@ -1,8 +1,12 @@
 const express = require('express');
+const cors = require('cors');
 const fs = require('fs').promises; // Use promises for cleaner async/await
 const path = require('path');
 const app = express();
 const PORT = 3000;
+
+// Enable CORS for all routes
+app.use(cors());
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
@@ -48,7 +52,7 @@ app.get('/read', async (req, res) => {
     try {
         const filePath = getSafePath(req.query.path);
         const data = await fs.readFile(filePath, 'utf8');
-        res.send(data);
+        res.send(data).status(200);
     } catch (err) {
         res.status(404).json({ error: 'File not found' });
     }
