@@ -1,8 +1,16 @@
-import express from 'express';
+import express, { response } from 'express';
 import cors from 'cors';
 import { promises as fs } from 'fs'; // Use promises for cleaner async/await
 import path from 'path';
 import { fileURLToPath } from 'url';
+import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config({ quiet: true });
+
+const token = process.env["GITHUB_TOKEN"];
+const endpoint = "https://models.github.ai/inference";
+const model = "openai/gpt-4.1";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,6 +134,45 @@ app.get('/list-all', async (req, res) => {
         res.status(500).json({ error: 'Failed to scan directory recursively' });
     }
 });
+
+let messages = [
+    { role:"system", content: "" }
+];
+
+app.post('/chat', async (req, res) => {
+    try {
+        messages = req.body.messages;
+        console.log(messages)
+        let newresponse = await chat();
+        res.json({ role: 'assistant', content: newresponse });
+    } catch (err) {
+        res.status(500).json({ error: err.message || 'Chat failed' });
+    }
+});
+
+
+async function chat() {
+    const client = new OpenAI({ baseURL: endpoint, apiKey: token });
+
+    const response = await client.chat.completions.create({
+        messages: messages,
+        temperature: 1,
+        top_p: 1,
+        model: model,
+        stream: true
+    });
+    
+    let assistantContent = "";
+    for await (const chunk of response) {
+        if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.content) {
+            assistantContent += chunk.choices[0].delta.content;
+            process.stdout.write(chunk.choices[0].delta.content);
+        }
+    }
+    console.log();
+    messages.push({ role: "assistant", content: assistantContent });
+    return assistantContent;
+}
 
 app.listen(PORT, () => {
     console.log(`File Manager API running at http://localhost:${PORT}`);
