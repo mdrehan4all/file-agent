@@ -1,7 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs').promises; // Use promises for cleaner async/await
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { promises as fs } from 'fs'; // Use promises for cleaner async/await
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = 3000;
 
