@@ -98,6 +98,20 @@ app.delete('/delete', async (req, res) => {
     }
 });
 
+// 5. CREATE: Folder
+app.post('/mkdir', async (req, res) => {
+    try {
+        const reqPath = req.body && req.body.path;
+        const dirPath = getSafePath(reqPath);
+
+        await fs.mkdir(dirPath, { recursive: true });
+        res.json({ message: 'Folder created successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create folder' });
+    }
+});
+
+
 /**
  * Helper: Recursively scans folders to build a nested JSON tree
  */
